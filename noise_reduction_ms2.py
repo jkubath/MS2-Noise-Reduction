@@ -1,0 +1,337 @@
+# noise_reduction_ms2.py
+# source: https://www.easy-tensorflow.com/tf-tutorials/autoencoders/noise-removal
+# command: python noise_reduction_ms2.py
+# note: change logs_path on line 22 to your output directory
+
+# Goal: change the implementation from the MNIST data to read in noisy ms2
+# 	data and output denoised ms2 data.  This will allow database search
+#	algorithms to have fewer peaks to check against.
+
+# imports
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+import protein # helper for reading ms2 data and binning to data[spectra][peak data]
+
+print("Noise Reduction NN")
+# Read in the data
+filePath = "C:/Users/koob8/Desktop/nn/output/"
+
+# training set
+#-------------------------------------------------------------------------
+no_noise_file = "no_noise.ms2" # ms2 file containing with no noise
+noise_file = "noise.ms2" # regular ms2 data
+
+no_noise_output_file = "no_noise_binned.ms2"
+noise_output_file = "noise_binned.ms2"
+
+write_noise_output = True
+write_no_noise_output = True
+
+# validation set
+#-------------------------------------------------------------------------
+valid_no_noise_file = "valid_no_noise.ms2" # ms2 file containing with no noise
+valid_noise_file = "valid_noise.ms2" # regular ms2 data
+
+valid_no_noise_output_file = "valid_no_noise_binned.ms2"
+valid_noise_output_file = "valid_noise_binned.ms2"
+
+valid_write_noise_output = True
+valid_write_no_noise_output = True
+
+# length of peak array
+dataLength = 5000
+
+
+# Create file readers for training set
+#-------------------------------------------------------------------------
+print("Creating training file objects")
+try:
+	# labels
+	noise_file_object = open(filePath + noise_file, "r")
+	# input data
+	no_noise_file_object = open(filePath + no_noise_file, "r")
+
+	# write to the output files
+	no_noise_output_file = open(filePath + no_noise_output_file, "w")
+	noise_output_file = open(filePath + noise_output_file, "w")
+except (OSError, IOError) as e:
+	print(e)
+	exit()
+
+# Create file readers for validation set
+#-------------------------------------------------------------------------
+print("Creating validation file objects")
+try:
+	# labels
+	valid_noise_file_object = open(filePath + valid_noise_file, "r")
+	# input data
+	valid_no_noise_file_object = open(filePath + valid_no_noise_file, "r")
+
+	# write to the output files
+	valid_noise_output_file = open(filePath + valid_noise_output_file, "w")
+	valid_no_noise_output_file = open(filePath + valid_no_noise_output_file, "w")
+except (OSError, IOError) as e:
+	print(e)
+	exit()
+
+# Read and output training data
+#-------------------------------------------------------------------------
+print("Reading training data")
+noise_data = protein.readFile(noise_file_object, dataLength, noise_output_file, write_noise_output)
+no_noise_data = protein.readFile(no_noise_file_object, dataLength, no_noise_output_file, write_no_noise_output)
+
+print(noise_data.shape)
+print(no_noise_data.shape)
+
+# Read and output validation data
+#-------------------------------------------------------------------------
+print("Reading validation data")
+valid_noise_data = protein.readFile(valid_noise_file_object, dataLength, valid_noise_output_file, valid_write_noise_output)
+valid_no_noise_data = protein.readFile(valid_no_noise_file_object, dataLength, valid_no_noise_output_file, valid_write_no_noise_output)
+
+print(valid_noise_data.shape)
+print(valid_no_noise_data.shape)
+
+# i = 0
+# for x in np.nditer(noise_data):
+# 	print(x),
+# 	i += 1
+# 	if i == 10:
+# 		break
+
+# i = 0
+# for x in np.nditer(no_noise_data):
+# 	print(x),
+# 	i += 1
+# 	if i == 10:
+# 		break
+
+# i = 0
+# for x in np.nditer(valid_noise_data):
+# 	print(x),
+# 	i += 1
+# 	if i == 10:
+# 		break
+
+# i = 0
+# for x in np.nditer(valid_no_noise_data):
+# 	print(x),
+# 	i += 1
+# 	if i == 10:
+# 		break
+
+# Create TensorFlow Dataset object for training data
+#-------------------------------------------------------------------------
+# First input argument is Tensor objects of the noise data (training)
+# Second input argument is Tensor objects of the no noise data (labels)
+tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(noise_data, dtype=tf.float32), tf.convert_to_tensor(no_noise_data, dtype=tf.float32))).repeat().batch(10)
+
+tf_iter = tf_data.make_one_shot_iterator()
+x, y = tf_iter.get_next()
+
+# Create TensorFlow Dataset object for validation data
+#-------------------------------------------------------------------------
+# First input argument is Tensor objects of the noise data (training)
+# Second input argument is Tensor objects of the no noise data (labels)
+valid_tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(valid_noise_data, dtype=tf.float32), tf.convert_to_tensor(valid_no_noise_data, dtype=tf.float32))).repeat().batch(10)
+
+# hyper-parameters
+logs_path = "C:/Users/koob8/Desktop/nn"  # path to the folder that we want to save the logs for Tensorboard
+learning_rate = 0.001  # The optimization learning rate
+epochs = 5 #10  # Total number of training epochs
+batch_size = 10 #100  # Training batch size
+display_freq = 1 #100  # Frequency of displaying the training results
+
+# number of units in the hidden layer
+h1 = 100
+
+# level of the noise in noisy data
+noise_level = 0.6
+ 
+# weight and bais wrappers
+def weight_variable(name, shape):
+    """
+    Create a weight variable with appropriate initialization
+    :param name: weight name
+    :param shape: weight shape
+    :return: initialized weight variable
+    """
+    initer = tf.truncated_normal_initializer(stddev=0.01)
+    return tf.get_variable('W_' + name,
+                           dtype=tf.float32,
+                           shape=shape,
+                           initializer=initer)
+
+def bias_variable(name, shape):
+    """
+    Create a bias variable with appropriate initialization
+    :param name: bias variable name
+    :param shape: bias variable shape
+    :return: initialized bias variable
+    """
+    initial = tf.constant(0., shape=shape, dtype=tf.float32)
+    return tf.get_variable('b_' + name,
+                           dtype=tf.float32,
+                           initializer=initial)
+
+def fc_layer(x, num_units, name, use_relu=True):
+    """
+    Create a fully-connected layer
+    :param x: input from previous layer
+    :param num_units: number of hidden units in the fully-connected layer
+    :param name: layer name
+    :param use_relu: boolean to add ReLU non-linearity (or not)
+    :return: The output array
+    """
+    with tf.variable_scope(name):
+        in_dim = x.get_shape()[1]
+        W = weight_variable(name, shape=[in_dim, num_units])
+        tf.summary.histogram('W', W)
+        b = bias_variable(name, [num_units])
+        tf.summary.histogram('b', b)
+        layer = tf.matmul(x, W)
+        layer += b
+        if use_relu:
+            layer = tf.nn.relu(layer)
+        return layer
+
+# Create graph
+# Placeholders for inputs (x), outputs(y)
+with tf.variable_scope('Input'):
+    x_original = tf.placeholder(tf.float32, shape=[None, dataLength], name='X_original')
+    x_noisy = tf.placeholder(tf.float32, shape=[None, dataLength], name='X_noisy')
+
+fc1 = fc_layer(x, h1, 'Hidden_layer', use_relu=True)
+out = fc_layer(fc1, dataLength, 'Output_layer', use_relu=False)
+
+# Define the loss function, optimizer, and accuracy
+with tf.variable_scope('Train'):
+    with tf.variable_scope('Loss'):
+        # loss = tf.reduce_mean(tf.losses.mean_squared_error(x_original, out), name='loss')
+        loss = tf.reduce_mean(tf.losses.mean_squared_error(y, out), name='loss')
+        tf.summary.scalar('loss', loss)
+    with tf.variable_scope('Optimizer'):
+        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, name='Adam-op').minimize(loss)
+
+# Initializing the variables
+init = tf.global_variables_initializer()
+
+# Launch the graph (session)
+sess = tf.InteractiveSession() # using InteractiveSession instead of Session to test network in separate cell
+sess.run(init)
+train_writer = tf.summary.FileWriter(logs_path, sess.graph)
+num_tr_iter = int(len(noise_data) / batch_size)
+global_step = 0
+for epoch in range(epochs):
+    print('Training epoch: {}'.format(epoch + 1))
+    for iteration in range(num_tr_iter):
+        # get the next batch of data
+
+        global_step += 1
+        # Run optimization op (backprop)
+        sess.run(optimizer)
+        if iteration % display_freq == 0:
+            # Calculate and display the batch loss and accuracy
+            loss_batch = sess.run(loss)
+            print("iter {0:3d}:\t Reconstruction loss={1:.3f}".
+                  format(iteration, loss_batch))
+
+    # Run validation after every epoch
+    loss_valid = sess.run(loss)
+    print('---------------------------------------------------------')
+    print("Epoch: {0}, validation loss: {1:.3f}".
+          format(epoch + 1, loss_valid))
+    print('---------------------------------------------------------')
+
+
+
+def plot_images(original_images, noisy_images, reconstructed_images):
+    """
+    Create figure of original and reconstructed image.
+    :param original_image: original images to be plotted, (?, img_h*img_w)
+    :param noisy_image: original images to be plotted, (?, img_h*img_w)
+    :param reconstructed_image: reconstructed images to be plotted, (?, img_h*img_w)
+    """
+    num_images = 3
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=num_images, ncols=1)
+    fig.subplots_adjust(hspace=.1, wspace=0)
+
+    img_h = 1
+    img_w = 5000
+    # Plot image.
+    ax1.plot(original_images[0])
+    ax2.plot(noisy_images[0])
+    ax3.plot(reconstructed_images[0])
+
+    ax1.set_title("Original Image")
+    ax2.set_title("Noisy Image")
+    ax3.set_title("Reconstructed Image")
+
+    fig.tight_layout()
+    plt.show()
+ 
+# Test the network after training
+# Make a noisy image
+
+# validation set
+#-------------------------------------------------------------------------
+test_no_noise_file = "test_no_noise.ms2" # ms2 file containing with no noise
+test_noise_file = "test_noise.ms2" # regular ms2 data
+
+test_no_noise_output_file = "test_no_noise_binned.ms2"
+test_noise_output_file = "test_noise_binned.ms2"
+
+test_write_noise_output = True
+test_write_no_noise_output = True
+
+# length of peak array
+dataLength = 5000
+
+
+# Create file readers for test set
+#-------------------------------------------------------------------------
+print("Creating test file objects")
+try:
+	# input data
+	test_no_noise_file_object = open(filePath + test_no_noise_file, "r")
+	# labels
+	test_noise_file_object = open(filePath + test_noise_file, "r")
+	
+	# write to the output files
+	test_no_noise_output_file = open(filePath + test_no_noise_output_file, "w")
+	test_noise_output_file = open(filePath + test_noise_output_file, "w")
+except (OSError, IOError) as e:
+	print(e)
+	exit()
+
+# Read and output training data
+#-------------------------------------------------------------------------
+print("Reading test data")
+test_no_noise_data = protein.readFile(test_no_noise_file_object, dataLength, test_noise_output_file, test_write_noise_output)
+test_noise_data = protein.readFile(test_noise_file_object, dataLength, test_noise_output_file, test_write_noise_output)
+
+print(len(test_noise_data))
+print(len(test_no_noise_data))
+
+# Reconstruct a clean image from noisy image
+x_reconstruct = sess.run(out, feed_dict={x_noisy: test_noise_data})
+# Calculate the loss between reconstructed image and original image
+loss_test = sess.run(loss, feed_dict={x_original: test_no_noise_data, x_noisy: test_noise_data})
+print('---------------------------------------------------------')
+print("Test loss of original image compared to reconstructed image : {0:.3f}".format(loss_test))
+print('---------------------------------------------------------')
+
+# Plot original image, noisy image and reconstructed image
+plot_images(test_no_noise_data, test_noise_data, x_reconstruct)
+ 
+
+
+
+
+
+
+
+
+
+
