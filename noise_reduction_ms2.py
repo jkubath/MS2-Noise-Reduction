@@ -12,13 +12,13 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import protein # helper for reading ms2 data and binning to data[spectra][peak data]
+import os # used to access operating system directory structure
 
 print("Noise Reduction NN")
 # Read in the data
-filePath = "C:/Users/koob8/Desktop/MS2-Noise-Reduction/output/"
-# filePath = "/Users/jonah/Desktop/MS2-Noise-Reduction/output/"
+filePath = str(os.getcwd()) + "/big_data/"
 
-# length of peak array (max m/z value)
+# length of peak array (0 to max m/z value)
 dataLength = 5000
 
 # training set
@@ -76,6 +76,8 @@ except (OSError, IOError) as e:
 	exit()
 
 # Read and output training data
+# returns numpy array of spectrum data binned to nearest m/z integer value
+# writes the data in csv format to file
 #-------------------------------------------------------------------------
 print("Reading training data")
 noise_data = protein.readFile(noise_file_object, dataLength, noise_output_file, write_noise_output)
@@ -86,6 +88,8 @@ print("noise: {}".format(noise_data.shape))
 print("no_noise: {}".format(noise_data.shape))
 
 # Read and output validation data
+# returns numpy array of spectrum data binned to nearest m/z integer value
+# writes the data in csv format to file
 #-------------------------------------------------------------------------
 print("Reading validation data")
 valid_noise_data = protein.readFile(valid_noise_file_object, dataLength, valid_noise_output_file, valid_write_noise_output)
@@ -141,8 +145,7 @@ x, y = tf_iter.get_next()
 valid_tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(valid_noise_data, dtype=tf.float32), tf.convert_to_tensor(valid_no_noise_data, dtype=tf.float32))).repeat().batch(10)
 
 # hyper-parameters
-filePath = "C:/Users/koob8/Desktop/MS2-Noise-Reduction/"
-# logs_path = "/Users/jonah/Desktop/MS2-Noise-Reduction/"  # path to the folder that we want to save the logs for Tensorboard
+filePath = str(os.getcwd()) # path to the folder that we want to save the logs for Tensorboard
 learning_rate = 0.001  # The optimization learning rate
 epochs = 5 #10  # Total number of training epochs
 batch_size = 10 #100  # Training batch size
@@ -150,9 +153,6 @@ display_freq = 1 #100  # Frequency of displaying the training results
 
 # number of units in the hidden layer
 h1 = 100
-
-# level of the noise in noisy data
-noise_level = 0.6
 
 # weight and bias wrappers
 def weight_variable(name, shape):

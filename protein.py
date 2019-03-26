@@ -1,8 +1,15 @@
+# protein.py is a helper file for noise_reduction_ms2.py
+#
+# Description: The main() function is used to take a MS2
+# format data file, read the spectrum information (m/z and intensity)
+# and write the values binned to the nearest integer value of the m/z
+# value
 import numpy as np # zero out array
 import matplotlib.pyplot as plt # show ms2 data
 import csv # write output as csv
+import os # get current working directory for output
 
-# writes the data in a csv format to the file
+# writes the data list in a csv format to the file
 def outputData(writer, data, index, length):
 	# Error checking for empty data
 	if len(data) == 0 or len(data[index]) == 0:
@@ -20,6 +27,7 @@ def outputData(writer, data, index, length):
 
 	writer.write(str(data[index][i]) + "\n")
 
+# Read the MS2 format data and saves the spectrum data to the outputFileObject
 # Returns a numpy array of the data
 def readFile(fileObject, arraySize, outputFileObject, writeToFile = False):
 	data = [] # list to hold the list of spectrum data
@@ -61,12 +69,12 @@ def readFile(fileObject, arraySize, outputFileObject, writeToFile = False):
 		# Add the peak point to the correct bin
 		try:
 			# change the index
-			if int(float(splitLine[0])) > addIndex:
-				addIndex = int(float(splitLine[0]))
+			if int(round(float(splitLine[0]))) > addIndex:
+				addIndex = int(round(float(splitLine[0])))
 
 			# move down the array until an unfilled index is found
-			# while(data[addIndex] != 0):
-			# 	addIndex += 1
+			# if overlapping data points are found, keep the higher
+			# intensity peak
 			if float(splitLine[1]) > data[spectrum_count][addIndex]:
 				data[spectrum_count][addIndex] = int(float(splitLine[1]))
 
@@ -80,19 +88,22 @@ def readFile(fileObject, arraySize, outputFileObject, writeToFile = False):
 
 	return np.array(data)
 
-# python script for protein research
+# python script to read MS2 data, bin spectra values to nearest m/z
+# integer value, and output in csv format
 def main():
 	print("Protein script")
 
 	# Default variables
 	#filePath = "/Users/jonah/Desktop/research/"
-	filePath = "C:/Users/koob8/Desktop/nn/output/"
-	fileName = "noNoise.ms2"
-	#fileName = "sampleOut.ms2"
-	fileOutput = "peptides_sd.ms2"
+	filePath = str(os.getcwd()) + "/big_data/"
+	fileName = "no_noise.ms2"
+	fileOutput = "no_noise_binned.ms2"
 
 	# hold the peak information
 	dataLength = 5000
+
+	# create the output directory if it doesn't exist
+	os.makedirs(filePath, exist_ok=True)
 
 	# open file for reading
 	try:

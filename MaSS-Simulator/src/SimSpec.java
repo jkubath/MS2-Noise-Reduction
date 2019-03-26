@@ -24,8 +24,6 @@ import java.util.Random;
 
 import org.omg.CORBA.CTX_RESTRICT_SCOPE;
 
-//import simSpec.MyPair;
-
 /**
  *
  * @author Gul
@@ -88,7 +86,7 @@ public static void main(String[] args) throws FileNotFoundException, IOException
         PrintWriter printWriter = new PrintWriter(myPepsFile);
 
         // Output file without noise
-        String noNoiseFile = "noNoise.ms2";
+        String noNoiseFile = "no_noise.ms2";
         FileWriter myNoNoiseFile = new FileWriter(noNoiseFile);
         PrintWriter noNoisePrintWriter = new PrintWriter(myNoNoiseFile);
         // Ground truth
@@ -323,8 +321,6 @@ static Comparator<Ion> comp = (Ion a, Ion b)->{
         return a.compareTo(b);
 };
 
-
-
 static boolean getSelection(Double prob, Random r) {
         int selection = 0;
         Double threshold = 10 - prob / 10;
@@ -399,7 +395,6 @@ static void readParams(BufferedReader myFile) throws IOException {
                 System.exit(1);
         }
 }
-
 
 static void addNoise(int noiseType, ArrayList<Ion> noiseList, int totNoisePeaks, Double peptideMass, Random noiseGen, Random intenGen) {
         int noiseAdded = 0;

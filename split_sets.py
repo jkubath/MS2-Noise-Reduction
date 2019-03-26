@@ -1,34 +1,29 @@
-import os
-import random
+# split_sets.py is used to break apart a file containing peptide strings
+# The input file will be read and a random integer is chosen.  This variable
+# decides which file to output the peptide string to (test, train, or validate)
+import os # operating system directory structure
+import random # generating random integer to decide which file (test, train, validate) to write the peptide to
 
 
-def generateSets(folder = "/output"):
-    # File names
+def generateSets(folder = "/output", inputFile):
+    # File names for output
     #-------------------------------------------------------------------------
-    # no_noise_file = "no_noise.ms2" # ms2 file containing with no noise
-    # noise_file = "noise.ms2" # regular ms2 data
-    #
-    # no_noise_output_file = "no_noise_binned.ms2"
-    # noise_output_file = "noise_binned.ms2"
-    #
-    #
-    inputFile = "peptides_5000.txt"
-
     train_file = "train.txt"
     valid_file = "valid.txt"
     test_file = "test.txt"
 
+    # percentages to write data to files
+    # train_min = 31-100 get written to training file
+    # valid_min = 11 - 30 get written to validation file
+    # The rest are written to test file
     train_min = 30
     valid_min = 10
 
-    write_noise_output = True
-    write_no_noise_output = True
-
     # Create file readers for training set
     #-------------------------------------------------------------------------
-    print("Creating training file objects")
+    print("Creating file objects")
     try:
-    	# labels
+    	# read peptide sequences
         peptides_object = open(folder + inputFile, "r")
 
     	# write to the output files
@@ -45,12 +40,13 @@ def generateSets(folder = "/output"):
         randomChoice = random.randint(0, 101)
 
         if randomChoice > train_min:
-            train_object.write(line)
+            train_object.write(line) # write to training file
         elif randomChoice > valid_min:
-            valid_object.write(line)
+            valid_object.write(line) # write to validation file
         else:
-            test_object.write(line)
+            test_object.write(line) # write to test file
 
+        # print status
         if count % 1000 == 0:
             print("Wrote {} peptides".format(count))
 
@@ -59,16 +55,21 @@ def generateSets(folder = "/output"):
 def main():
     print("Splitting data sets")
 
-    # Read in the data
-    folder = "/Users/jonah/Desktop/MS2-Noise-Reduction/"
-    outputFolder = "output1/"
+    # Determine working directory and output folder
+    folder = str(os.getcwd())
+    outputFolder = "/peptide/"
 
-    noNoise = "no_noise.ms2"
-    noise = "noise.ms2"
+    # File containing a peptide sequences (one sequence per line)
+    inputFile = "peptides_5000.txt"
 
+    print("Output folder: {}".format(folder + outputFolder))
+
+    # make the output folder if it doesn't exist
     os.makedirs(outputFolder, exist_ok=True)
 
-    generateSets(folder + outputFolder)
+    # read the input peptide file and split the peptides between test, train,
+    # and validation files
+    generateSets(folder + outputFolder, inputFile)
 
 
 if __name__ == '__main__':
