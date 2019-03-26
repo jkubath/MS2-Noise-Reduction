@@ -15,7 +15,8 @@ import protein # helper for reading ms2 data and binning to data[spectra][peak d
 
 print("Noise Reduction NN")
 # Read in the data
-filePath = "/Users/jonah/Desktop/MS2-Noise-Reduction/output/"
+filePath = "C:/Users/koob8/Desktop/MS2-Noise-Reduction/output/"
+# filePath = "/Users/jonah/Desktop/MS2-Noise-Reduction/output/"
 
 # length of peak array (max m/z value)
 dataLength = 5000
@@ -80,8 +81,9 @@ print("Reading training data")
 noise_data = protein.readFile(noise_file_object, dataLength, noise_output_file, write_noise_output)
 no_noise_data = protein.readFile(no_noise_file_object, dataLength, no_noise_output_file, write_no_noise_output)
 
-print(noise_data.shape)
-print(no_noise_data.shape)
+print("Training data shape")
+print("noise: {}".format(noise_data.shape))
+print("no_noise: {}".format(noise_data.shape))
 
 # Read and output validation data
 #-------------------------------------------------------------------------
@@ -89,9 +91,12 @@ print("Reading validation data")
 valid_noise_data = protein.readFile(valid_noise_file_object, dataLength, valid_noise_output_file, valid_write_noise_output)
 valid_no_noise_data = protein.readFile(valid_no_noise_file_object, dataLength, valid_no_noise_output_file, valid_write_no_noise_output)
 
-print(valid_noise_data.shape)
-print(valid_no_noise_data.shape)
+print("Validation data shape")
+print("noise: {}".format(valid_noise_data.shape))
+print("no_noise: {}".format(valid_no_noise_data.shape))
 
+# Print first 10 objects in data
+#-------------------------------------------------------------------------
 # i = 0
 # for x in np.nditer(noise_data):
 # 	print(x),
@@ -136,7 +141,8 @@ x, y = tf_iter.get_next()
 valid_tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(valid_noise_data, dtype=tf.float32), tf.convert_to_tensor(valid_no_noise_data, dtype=tf.float32))).repeat().batch(10)
 
 # hyper-parameters
-logs_path = "/Users/jonah/Desktop/MS2-Noise-Reduction/"  # path to the folder that we want to save the logs for Tensorboard
+filePath = "C:/Users/koob8/Desktop/MS2-Noise-Reduction/"
+# logs_path = "/Users/jonah/Desktop/MS2-Noise-Reduction/"  # path to the folder that we want to save the logs for Tensorboard
 learning_rate = 0.001  # The optimization learning rate
 epochs = 5 #10  # Total number of training epochs
 batch_size = 10 #100  # Training batch size
@@ -147,7 +153,7 @@ h1 = 100
 
 # level of the noise in noisy data
 noise_level = 0.6
- 
+
 # weight and bias wrappers
 def weight_variable(name, shape):
     """
@@ -272,7 +278,7 @@ def plot_images(original_images, noisy_images, reconstructed_images):
 
     fig.tight_layout()
     plt.show()
- 
+
 # Test the network after training
 # Make a noisy image
 
@@ -299,7 +305,7 @@ try:
 	test_no_noise_file_object = open(filePath + test_no_noise_file, "r")
 	# labels
 	test_noise_file_object = open(filePath + test_noise_file, "r")
-	
+
 	# write to the output files
 	test_no_noise_output_file = open(filePath + test_no_noise_output_file, "w")
 	test_noise_output_file = open(filePath + test_noise_output_file, "w")
@@ -326,14 +332,3 @@ print('---------------------------------------------------------')
 
 # Plot original image, noisy image and reconstructed image
 plot_images(test_no_noise_data, test_noise_data, x_reconstruct)
- 
-
-
-
-
-
-
-
-
-
-
