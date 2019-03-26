@@ -47,7 +47,7 @@ static Double intenCon = 1000.0;
 static Double noiseIntenMin = 0.25;
 static Double noiseIntenMax = 2.25;
 static int totCh = 2;
-static int noiseType = 1;     // 0 = no noise, 1 = uniform, 2 = gaussian
+static int noiseType = 2;     // 0 = no noise, 1 = uniform, 2 = gaussian
 static Double SNR = 4.0;
 static ArrayList<String> immoniumIonsAA = new ArrayList<>();
 static ArrayList<Double> ImmProbs = new ArrayList<>();

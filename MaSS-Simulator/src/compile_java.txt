@@ -1,0 +1,15 @@
+Compilation for newer version of Java
+
+
+Start by trying to follow the compilation instructions in the readMe.pf
+
+~$ javac SimSpec.java
+
+If org.omg.corba is not found, the jar file is included in the src directory
+
+~$ javac -cp "corba-api-5.0.1.jar" SimSpec.java Ion.java MyPair.java
+
+Run with
+
+~$ java SimSpec 1 1 samplePeptides.txt sampleOut.ms2 myParams.txt myMods.ptm
+
