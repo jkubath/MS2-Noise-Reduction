@@ -15,7 +15,10 @@ import protein # helper for reading ms2 data and binning to data[spectra][peak d
 
 print("Noise Reduction NN")
 # Read in the data
-filePath = "C:/Users/koob8/Desktop/nn/output/"
+filePath = "/Users/jonah/Desktop/MS2-Noise-Reduction/output/"
+
+# length of peak array (max m/z value)
+dataLength = 5000
 
 # training set
 #-------------------------------------------------------------------------
@@ -38,10 +41,6 @@ valid_noise_output_file = "valid_noise_binned.ms2"
 
 valid_write_noise_output = True
 valid_write_no_noise_output = True
-
-# length of peak array
-dataLength = 5000
-
 
 # Create file readers for training set
 #-------------------------------------------------------------------------
@@ -137,7 +136,7 @@ x, y = tf_iter.get_next()
 valid_tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(valid_noise_data, dtype=tf.float32), tf.convert_to_tensor(valid_no_noise_data, dtype=tf.float32))).repeat().batch(10)
 
 # hyper-parameters
-logs_path = "C:/Users/koob8/Desktop/nn"  # path to the folder that we want to save the logs for Tensorboard
+logs_path = "/Users/jonah/Desktop/MS2-Noise-Reduction/"  # path to the folder that we want to save the logs for Tensorboard
 learning_rate = 0.001  # The optimization learning rate
 epochs = 5 #10  # Total number of training epochs
 batch_size = 10 #100  # Training batch size
@@ -149,7 +148,7 @@ h1 = 100
 # level of the noise in noisy data
 noise_level = 0.6
  
-# weight and bais wrappers
+# weight and bias wrappers
 def weight_variable(name, shape):
     """
     Create a weight variable with appropriate initialization
@@ -203,6 +202,9 @@ with tf.variable_scope('Input'):
     x_noisy = tf.placeholder(tf.float32, shape=[None, dataLength], name='X_noisy')
 
 fc1 = fc_layer(x, h1, 'Hidden_layer', use_relu=True)
+# fc2 = fc_layer(fc1, 'Hiden_layer_2', use_relu=True)
+# fc3 = fc_layer(fc2, 'Hiden_layer_3', use_relu=True)
+# fc4 = fc_layer(fc3, 'Hiden_layer_4', use_relu=True)
 out = fc_layer(fc1, dataLength, 'Output_layer', use_relu=False)
 
 # Define the loss function, optimizer, and accuracy
@@ -305,7 +307,7 @@ except (OSError, IOError) as e:
 	print(e)
 	exit()
 
-# Read and output training data
+# Read and output test data
 #-------------------------------------------------------------------------
 print("Reading test data")
 test_no_noise_data = protein.readFile(test_no_noise_file_object, dataLength, test_noise_output_file, test_write_noise_output)
