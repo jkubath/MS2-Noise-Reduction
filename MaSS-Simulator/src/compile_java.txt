@@ -14,4 +14,4 @@ Compilation for newer version of Java
 # output to "Mass-Simulator/src" as noise.ms2 and no_noise.ms2
 # ------------------------------------------------------------------------------
 
-~$ java SimSpec 1 1 ./data/peptides_5000.txt noise.ms2 ./data/params.txt ./data/mods.ptm
+~$ java SimSpec 1 1 ./data/peptides_5000.txt test ./data/params.txt ./data/mods.ptm

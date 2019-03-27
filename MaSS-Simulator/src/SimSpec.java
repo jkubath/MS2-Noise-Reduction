@@ -81,12 +81,12 @@ public static void main(String[] args) throws FileNotFoundException, IOException
         BufferedReader peptideReader = new BufferedReader(new FileReader(fileName));
 
         // Output file with noise
-        String outFile = args[3];
+        String outFile = args[3] + "_noise.ms2";
         FileWriter myPepsFile = new FileWriter(outFile);
         PrintWriter printWriter = new PrintWriter(myPepsFile);
 
         // Output file without noise
-        String noNoiseFile = "no_noise.ms2";
+        String noNoiseFile = args[3] + "_no_noise.ms2";
         FileWriter myNoNoiseFile = new FileWriter(noNoiseFile);
         PrintWriter noNoisePrintWriter = new PrintWriter(myNoNoiseFile);
         // Ground truth
@@ -180,6 +180,7 @@ public static void main(String[] args) throws FileNotFoundException, IOException
                                 int l = 0;
                                 MyPair myChar;
                                 while ( l < peptideStr.length()) {
+					// System.out.println(l);
                                         myChar = getNextAA(peptideStr, l);
                                         subScriptB++;
                                         subScriptY = peptideStr.length() - subScriptB;
@@ -252,11 +253,13 @@ public static void main(String[] args) throws FileNotFoundException, IOException
                                 noNoisePrintWriter.println("Z\t"+maxCharge+"\t"+df.format(peptideMassN+1));
 
                                 bList.sort(comp);
+
                                 // Print without noise
                                 for (Ion b : bList) {
                                         if(b.m_z != 0)
                                                 noNoisePrintWriter.println(df.format(b.m_z)+" "+df.format(b.intensity));
                                 }
+				
                                 // Print with noise
                                 for (Ion b : noiseList) {
                                         if(b.m_z != 0)
@@ -270,6 +273,10 @@ public static void main(String[] args) throws FileNotFoundException, IOException
                 yList.clear();
                 noiseList.clear();
                 ImmList.clear();
+
+		if (count % 10000 == 0) {
+			System.out.println(count);
+		}
         }
         noNoisePrintWriter.flush();
         noNoisePrintWriter.close();

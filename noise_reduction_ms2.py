@@ -23,14 +23,14 @@ dataLength = 5000
 
 # training set
 #-------------------------------------------------------------------------
-no_noise_file = "no_noise.ms2" # ms2 file containing with no noise
-noise_file = "noise.ms2" # regular ms2 data
+train_no_noise_file = "train_no_noise.ms2" # ms2 file containing with no noise
+train_noise_file = "train_noise.ms2" # regular ms2 data
 
-no_noise_output_file = "no_noise_binned.ms2"
-noise_output_file = "noise_binned.ms2"
+train_no_noise_output_file = "train_no_noise_binned.ms2"
+train_noise_output_file = "train_noise_binned.ms2"
 
-write_noise_output = True
-write_no_noise_output = True
+train_write_noise_output = True
+train_write_no_noise_output = True
 
 # validation set
 #-------------------------------------------------------------------------
@@ -48,13 +48,13 @@ valid_write_no_noise_output = True
 print("Creating training file objects")
 try:
 	# labels
-	noise_file_object = open(filePath + noise_file, "r")
+	train_noise_file_object = open(filePath + train_noise_file, "r")
 	# input data
-	no_noise_file_object = open(filePath + no_noise_file, "r")
+	train_no_noise_file_object = open(filePath + train_no_noise_file, "r")
 
 	# write to the output files
-	no_noise_output_file = open(filePath + no_noise_output_file, "w")
-	noise_output_file = open(filePath + noise_output_file, "w")
+	train_no_noise_output_file = open(filePath + train_no_noise_output_file, "w")
+	train_noise_output_file = open(filePath + train_noise_output_file, "w")
 except (OSError, IOError) as e:
 	print(e)
 	exit()
@@ -80,12 +80,12 @@ except (OSError, IOError) as e:
 # writes the data in csv format to file
 #-------------------------------------------------------------------------
 print("Reading training data")
-noise_data = protein.readFile(noise_file_object, dataLength, noise_output_file, write_noise_output)
-no_noise_data = protein.readFile(no_noise_file_object, dataLength, no_noise_output_file, write_no_noise_output)
+train_noise_data = protein.readFile(train_noise_file_object, dataLength, train_noise_output_file, train_write_noise_output)
+train_no_noise_data = protein.readFile(train_no_noise_file_object, dataLength, train_no_noise_output_file, train_write_no_noise_output)
 
 print("Training data shape")
-print("noise: {}".format(noise_data.shape))
-print("no_noise: {}".format(noise_data.shape))
+print("noise: {}".format(train_noise_data.shape))
+print("no_noise: {}".format(train_noise_data.shape))
 
 # Read and output validation data
 # returns numpy array of spectrum data binned to nearest m/z integer value
@@ -133,7 +133,7 @@ print("no_noise: {}".format(valid_no_noise_data.shape))
 #-------------------------------------------------------------------------
 # First input argument is Tensor objects of the noise data (training)
 # Second input argument is Tensor objects of the no noise data (labels)
-tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(noise_data, dtype=tf.float32), tf.convert_to_tensor(no_noise_data, dtype=tf.float32))).repeat().batch(10)
+tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(train_noise_data, dtype=tf.float32), tf.convert_to_tensor(train_no_noise_data, dtype=tf.float32))).repeat().batch(10)
 
 tf_iter = tf_data.make_one_shot_iterator()
 x, y = tf_iter.get_next()
@@ -207,10 +207,10 @@ with tf.variable_scope('Input'):
     x_original = tf.placeholder(tf.float32, shape=[None, dataLength], name='X_original')
     x_noisy = tf.placeholder(tf.float32, shape=[None, dataLength], name='X_noisy')
 
-fc1 = fc_layer(x, h1, 'Hidden_layer', use_relu=True)
-# fc2 = fc_layer(fc1, 'Hiden_layer_2', use_relu=True)
-# fc3 = fc_layer(fc2, 'Hiden_layer_3', use_relu=True)
-# fc4 = fc_layer(fc3, 'Hiden_layer_4', use_relu=True)
+fc1 = fc_layer(x, h1, 'Hidden_layer_1', use_relu=True)
+# fc2 = fc_layer(fc1, h2, 'Hiden_layer_2', use_relu=True)
+# fc3 = fc_layer(fc2, h3, 'Hiden_layer_3', use_relu=True)
+# fc4 = fc_layer(fc3, h4, 'Hiden_layer_4', use_relu=True)
 out = fc_layer(fc1, dataLength, 'Output_layer', use_relu=False)
 
 # Define the loss function, optimizer, and accuracy
@@ -229,7 +229,7 @@ init = tf.global_variables_initializer()
 sess = tf.InteractiveSession() # using InteractiveSession instead of Session to test network in separate cell
 sess.run(init)
 train_writer = tf.summary.FileWriter(logs_path, sess.graph)
-num_tr_iter = int(len(noise_data) / batch_size)
+num_tr_iter = int(len(train_noise_data) / batch_size)
 global_step = 0
 for epoch in range(epochs):
     print('Training epoch: {}'.format(epoch + 1))

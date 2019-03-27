@@ -8,7 +8,7 @@ Source: https://github.com/pcdslab/MaSS-Simulator
 Dir: MNIST_data
 Description: Image data downloaded when running noise_reduction_tutorial.py.  Images are hand written numbers 0 to 9.
 
-Dir: small_output
+Dir: small_data
   Description: Folder containing input, validation, and test MS2 data for noise_reduction_ms2.py.  This data was generated with the MaSS-Simulator software.
     no_noise: Files without the added noise peaks
     binned: Files output from protein.py that have the generated MS2 data binned.  The m/z values are binned to integer values instead of float values.
@@ -46,7 +46,7 @@ General Outline:
 
     Run
     ----------------------------------------------------------------------------
-    java SimSpec 1 1 ./data/test.txt noise.ms2 ./data/params.txt ./data/mods.ptm
+    java SimSpec 1 1 ./data/test.txt test ./data/params.txt ./data/mods.ptm
 
     Output
     ----------------------------------------------------------------------------
@@ -58,8 +58,8 @@ General Outline:
     This folder is defaulted to "MS2-Noise-Reduction/big_data" and named appropriately
 
     Train files:
-      no_noise.ms2
-      noise.ms2
+      train_no_noise.ms2
+      train_noise.ms2
     Validation files:
       valid_no_noise.ms2
       valid_noise.ms2

@@ -37,7 +37,7 @@ def generateSets(inputFile, inputFolder, outputFolder = "/output"):
     count = 0
     for line in peptides_object:
         # random integer to decide which file to write to
-        randomChoice = random.randint(0, 101)
+        randomChoice = random.randint(1, 100)
 
         if randomChoice > train_min:
             train_object.write(line) # write to training file
