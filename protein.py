@@ -65,6 +65,8 @@ def readFile(fileObject, arraySize, outputFileObject, writeToFile = False):
 				if spectrum_count % 1000 == 0:
 					print("Wrote {} peptides".format(spectrum_count))
 				continue
+		elif splitLine[0][0] == "\n":
+			continue
 
 		# Add the peak point to the correct bin
 		try:
@@ -83,7 +85,7 @@ def readFile(fileObject, arraySize, outputFileObject, writeToFile = False):
 
 		# header information
 		except ValueError:
-			print("Error at {}".format(splitLine[0]))
+			print("Spectrum count: {}".format(spectrum_count))
 			print("First char: {}".format(splitLine[0][0]))
 
 	return np.array(data)

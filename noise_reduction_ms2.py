@@ -145,7 +145,7 @@ x, y = tf_iter.get_next()
 valid_tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(valid_noise_data, dtype=tf.float32), tf.convert_to_tensor(valid_no_noise_data, dtype=tf.float32))).repeat().batch(10)
 
 # hyper-parameters
-filePath = str(os.getcwd()) # path to the folder that we want to save the logs for Tensorboard
+logs_path = str(os.getcwd()) # path to the folder that we want to save the logs for Tensorboard
 learning_rate = 0.001  # The optimization learning rate
 epochs = 5 #10  # Total number of training epochs
 batch_size = 10 #100  # Training batch size

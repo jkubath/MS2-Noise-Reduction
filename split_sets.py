@@ -5,7 +5,7 @@ import os # operating system directory structure
 import random # generating random integer to decide which file (test, train, validate) to write the peptide to
 
 
-def generateSets(folder = "/output", inputFile):
+def generateSets(inputFile, inputFolder, outputFolder = "/output"):
     # File names for output
     #-------------------------------------------------------------------------
     train_file = "train.txt"
@@ -24,12 +24,12 @@ def generateSets(folder = "/output", inputFile):
     print("Creating file objects")
     try:
     	# read peptide sequences
-        peptides_object = open(folder + inputFile, "r")
+        peptides_object = open(inputFolder + inputFile, "r")
 
     	# write to the output files
-        train_object = open(folder + train_file, "w")
-        valid_object = open(folder + valid_file, "w")
-        test_object = open(folder + test_file, "w")
+        train_object = open(outputFolder + train_file, "w")
+        valid_object = open(outputFolder + valid_file, "w")
+        test_object = open(outputFolder + test_file, "w")
     except (OSError, IOError) as e:
     	print(e)
     	exit()
@@ -47,29 +47,32 @@ def generateSets(folder = "/output", inputFile):
             test_object.write(line) # write to test file
 
         # print status
-        if count % 1000 == 0:
+        if count % 1000000 == 0:
             print("Wrote {} peptides".format(count))
 
         count += 1
+
+    print("Wrote {} peptides".format(count))
 
 def main():
     print("Splitting data sets")
 
     # Determine working directory and output folder
     folder = str(os.getcwd())
+    inputFolder = "/protein/"
     outputFolder = "/peptide/"
 
     # File containing a peptide sequences (one sequence per line)
-    inputFile = "peptides_5000.txt"
+    inputFile = "peptideData.txt"
 
     print("Output folder: {}".format(folder + outputFolder))
 
     # make the output folder if it doesn't exist
-    os.makedirs(outputFolder, exist_ok=True)
+    os.makedirs(folder + outputFolder, exist_ok=True)
 
     # read the input peptide file and split the peptides between test, train,
     # and validation files
-    generateSets(folder + outputFolder, inputFile)
+    generateSets(inputFile, folder + inputFolder, folder + outputFolder)
 
 
 if __name__ == '__main__':

@@ -91,6 +91,8 @@ def main():
     # Read in the data
     outputFolder = str(os.getcwd()) + "/protein/"
 
+    os.makedirs(outputFolder, exist_ok=True)
+
     proteinOutputFile = outputFolder + "proteinData.txt" # protein id, protein sequence
     peptideOutputFile = outputFolder + "peptideData.txt" # strings of peptide sequences
     fastaFile = "yeast.fasta"

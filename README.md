@@ -46,7 +46,7 @@ General Outline:
 
     Run
     ----------------------------------------------------------------------------
-    java SimSpec 1 1 ./data/peptides_5000.txt noise.ms2 ./data/params.txt ./data/mods.ptm
+    java SimSpec 1 1 ./data/test.txt noise.ms2 ./data/params.txt ./data/mods.ptm
 
     Output
     ----------------------------------------------------------------------------
