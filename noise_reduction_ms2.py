@@ -13,13 +13,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import protein # helper for reading ms2 data and binning to data[spectra][peak data]
 import os # used to access operating system directory structure
+import sys
 
 print("Noise Reduction NN")
 # Read in the data
-filePath = str(os.getcwd()) + "/big_data/"
+filePath = str(os.getcwd()) + "/" + sys.argv[1] + "/"
 
 # length of peak array (0 to max m/z value)
-dataLength = 5000
+dataLength = 6000
 
 # training set
 #-------------------------------------------------------------------------
@@ -147,12 +148,12 @@ valid_tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(valid_n
 # hyper-parameters
 logs_path = str(os.getcwd()) # path to the folder that we want to save the logs for Tensorboard
 learning_rate = 0.001  # The optimization learning rate
-epochs = 5 #10  # Total number of training epochs
+epochs = 5000 #10  # Total number of training epochs
 batch_size = 10 #100  # Training batch size
-display_freq = 1 #100  # Frequency of displaying the training results
+display_freq = 100 #100  # Frequency of displaying the training results
 
 # number of units in the hidden layer
-h1 = 100
+h1 = 25
 
 # weight and bias wrappers
 def weight_variable(name, shape):
@@ -266,7 +267,7 @@ def plot_images(original_images, noisy_images, reconstructed_images):
     fig.subplots_adjust(hspace=.1, wspace=0)
 
     img_h = 1
-    img_w = 5000
+    img_w = 6000
     # Plot image.
     ax1.plot(original_images[0])
     ax2.plot(noisy_images[0])
@@ -294,7 +295,7 @@ test_write_noise_output = True
 test_write_no_noise_output = True
 
 # length of peak array
-dataLength = 5000
+dataLength = 6000
 
 
 # Create file readers for test set

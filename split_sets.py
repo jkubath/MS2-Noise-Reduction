@@ -19,6 +19,9 @@ def generateSets(inputFile, inputFolder, outputFolder = "/output"):
     train_min = 30
     valid_min = 10
 
+    # maximum number of peptides to use
+    max_peptides = 1000
+
     # Create file readers for training set
     #-------------------------------------------------------------------------
     print("Creating file objects")
@@ -51,6 +54,9 @@ def generateSets(inputFile, inputFolder, outputFolder = "/output"):
             print("Wrote {} peptides".format(count))
 
         count += 1
+
+        if count == max_peptides:
+            break
 
     print("Wrote {} peptides".format(count))
 
