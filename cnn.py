@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import protein # helper for reading ms2 data and binning to data[spectra][peak data]
 import os # used to access operating system directory structure
 import sys
+import keras
 
 def plot_images(original_images, noisy_images, reconstructed_images):
 	"""
@@ -42,11 +43,10 @@ def plot_images(original_images, noisy_images, reconstructed_images):
 
 print("Noise Reduction NN")
 # Read in the data
-# filePath = str(os.getcwd()) + "/" + sys.argv[1] + "/"
-filePath = "D:/MS2/"
+filePath = str(os.getcwd()) + "/" + sys.argv[1] + "/"
 
 # length of peak array (0 to max m/z value)
-dataLength = 7000
+dataLength = 6000
 
 # training set
 #-------------------------------------------------------------------------
@@ -56,8 +56,8 @@ train_noise_file = "train_noise.ms2" # regular ms2 data
 train_no_noise_output_file = "train_no_noise_binned.ms2"
 train_noise_output_file = "train_noise_binned.ms2"
 
-train_write_noise_output = True
-train_write_no_noise_output = True
+train_write_noise_output = False
+train_write_no_noise_output = False
 
 # validation set
 #-------------------------------------------------------------------------
@@ -67,8 +67,8 @@ valid_noise_file = "valid_noise.ms2" # regular ms2 data
 valid_no_noise_output_file = "valid_no_noise_binned.ms2"
 valid_noise_output_file = "valid_noise_binned.ms2"
 
-valid_write_noise_output = True
-valid_write_no_noise_output = True
+valid_write_noise_output = False
+valid_write_no_noise_output = False
 
 # Create file readers for training set
 #-------------------------------------------------------------------------
@@ -126,17 +126,25 @@ print("Validation data shape")
 print("noise: {}".format(valid_noise_data.shape))
 print("no_noise: {}".format(valid_no_noise_data.shape))
 
+# Pad data to make is 80*80
+length = 6400
+padding = length - len(train_noise_data[0])
+train_noise_data = np.pad(train_noise_data, ((0,0), (0, padding)), 'constant')
+train_no_noise_data = np.pad(train_no_noise_data, ((0,0), (0, padding)), 'constant')
+valid_noise_data = np.pad(valid_noise_data, ((0,0), (0, padding)), 'constant')
+valid_no_noise_data = np.pad(valid_no_noise_data, ((0,0), (0, padding)), 'constant')
+
 # Print first 10 objects in data
 #-------------------------------------------------------------------------
 # i = 0
-# for x in np.nditer(noise_data):
+# for x in np.nditer(train_noise_data):
 #   print(x),
 #   i += 1
 #   if i == 10:
 #       break
 
 # i = 0
-# for x in np.nditer(no_noise_data):
+# for x in np.nditer(train_no_noise_data):
 #   print(x),
 #   i += 1
 #   if i == 10:
@@ -160,7 +168,7 @@ print("no_noise: {}".format(valid_no_noise_data.shape))
 # hyper-parameters
 logs_path = str(os.getcwd()) # path to the folder that we want to save the logs for Tensorboard
 learning_rate = 0.001  # The optimization learning rate
-epochs = 60 #10  # Total number of training epochs
+epochs = 600 #10  # Total number of training epochs
 batch_size = 600 #100  # Training batch size
 display_freq = 100 #100  # Frequency of displaying the training results
 # number of units in the hidden layer
@@ -192,23 +200,35 @@ validation_init_op = iterator.make_initializer(valid_tf_data)
 # x, y = tf_iter.get_next()
 
 # print("TF_data {}".format(x.shape))
+maxLength = 6400
+def nn_model(x):
+	# MNIST data input is a 1-D vector of 6400 features (80*80)
+	# Reshape to match picture format [Height x Width x Channel]
+	# Tensor input become 4-D: [Batch Size, Height, Width, Channel]
+	x = tf.reshape(x, shape=[batch_size, 80, 80, 1])
 
-def nn_model(in_data):
-	# bn = tf.layers.batch_normalization(in_data)
-	fc1 = tf.layers.dense(in_data, h1)
-	fc2 = tf.layers.dense(fc1, h1)
-	fc3 = tf.layers.dense(fc2, h1)
-	fc4 = tf.layers.dense(fc3, h1)
-	fc5 = tf.layers.dense(fc4, h1)
-	fc6 = tf.layers.dense(fc5, h1)
-	fc7 = tf.layers.dense(fc6, h1)
-	fc8 = tf.layers.dense(fc7, h1)
-	fc9 = tf.layers.dense(fc8, h1)
-	fc10 = tf.layers.dense(fc9, h1)
-	fc11 = tf.layers.dense(fc10, h1)
-	drop = tf.layers.dropout(fc10)
-	fc12 = tf.layers.dense(drop, dataLength)
-	return fc12
+	# Convolution Layer with 32 filters and a kernel size of 5
+	conv1 = tf.keras.layers.Conv2D(32, 5, activation=tf.nn.relu)(x)
+	# Max Pooling (down-sampling) with strides of 2 and kernel size of 2
+	conv1 = keras.layers.MaxPool2D(pool_size=2)(conv1)
+
+	# Convolution Layer with 64 filters and a kernel size of 3
+	conv2 = tf.keras.layers.Conv2D(64, 3, activation=tf.nn.relu)(conv1)
+	# Max Pooling (down-sampling) with strides of 2 and kernel size of 2
+	conv2 = keras.layers.MaxPool2D(pool_size=2)(conv2)
+
+	# Flatten the data to a 1-D vector for the fully connected layer
+	fc1 = keras.contrib.layers.flatten(conv2)
+
+	# Fully connected layer (in tf contrib folder for now)
+	fc1 = keras.layers.dense(fc1, 1024)
+	# Apply Dropout (if is_training is False, dropout is not applied)
+	fc1 = keras.layers.dropout(fc1, rate=dropout, training=is_training)
+
+	# Output layer, class prediction
+	out = keras.layers.dense(fc1, maxLength)
+
+	return out
 
 # create the neural network model
 # next_element[0] gets the next set of input data from the iterator
@@ -257,8 +277,8 @@ with tf.Session() as sess:
 	test_no_noise_output_file = "test_no_noise_binned.ms2"
 	test_noise_output_file = "test_noise_binned.ms2"
 
-	test_write_noise_output = True
-	test_write_no_noise_output = True
+	test_write_noise_output = False
+	test_write_no_noise_output = False
 
 	# length of peak array
 	dataLength = 6000
@@ -288,6 +308,12 @@ with tf.Session() as sess:
 
 	print(len(test_noise_data))
 	print(len(test_no_noise_data))
+
+	# Pad data to make is 80*80
+	length = 6400
+	padding = length - len(test_noise_data[0])
+	test_noise_data = np.pad(test_noise_data, ((0,0), (0, padding)), 'constant')
+	test_no_noise_data = np.pad(test_no_noise_data, ((0,0), (0, padding)), 'constant')
 
 	# Create test Tensorflow Dataset
 	test_tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(test_noise_data,
