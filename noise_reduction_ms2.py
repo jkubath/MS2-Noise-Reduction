@@ -130,30 +130,16 @@ print("no_noise: {}".format(valid_no_noise_data.shape))
 # 	if i == 10:
 # 		break
 
-# Create TensorFlow Dataset object for training data
-#-------------------------------------------------------------------------
-# First input argument is Tensor objects of the noise data (training)
-# Second input argument is Tensor objects of the no noise data (labels)
-tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(train_noise_data, dtype=tf.float32), tf.convert_to_tensor(train_no_noise_data, dtype=tf.float32))).repeat().batch(10)
-
-tf_iter = tf_data.make_one_shot_iterator()
-x, y = tf_iter.get_next()
-
-# Create TensorFlow Dataset object for validation data
-#-------------------------------------------------------------------------
-# First input argument is Tensor objects of the noise data (training)
-# Second input argument is Tensor objects of the no noise data (labels)
-valid_tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(valid_noise_data, dtype=tf.float32), tf.convert_to_tensor(valid_no_noise_data, dtype=tf.float32))).repeat().batch(10)
-
 # hyper-parameters
 logs_path = str(os.getcwd()) # path to the folder that we want to save the logs for Tensorboard
 learning_rate = 0.001  # The optimization learning rate
-epochs = 5000 #10  # Total number of training epochs
-batch_size = 10 #100  # Training batch size
+epochs = 50 #10  # Total number of training epochs
+batch_size = 32 #100  # Training batch size
 display_freq = 100 #100  # Frequency of displaying the training results
 
 # number of units in the hidden layer
-h1 = 25
+h1 = 50
+h2 = 50
 
 # weight and bias wrappers
 def weight_variable(name, shape):
@@ -208,17 +194,16 @@ with tf.variable_scope('Input'):
     x_original = tf.placeholder(tf.float32, shape=[None, dataLength], name='X_original')
     x_noisy = tf.placeholder(tf.float32, shape=[None, dataLength], name='X_noisy')
 
-fc1 = fc_layer(x, h1, 'Hidden_layer_1', use_relu=True)
-# fc2 = fc_layer(fc1, h2, 'Hiden_layer_2', use_relu=True)
+fc1 = fc_layer(x_noisy, h1, 'Hidden_layer_1', use_relu=True)
+fc2 = fc_layer(fc1, h2, 'Hiden_layer_2', use_relu=True)
 # fc3 = fc_layer(fc2, h3, 'Hiden_layer_3', use_relu=True)
 # fc4 = fc_layer(fc3, h4, 'Hiden_layer_4', use_relu=True)
-out = fc_layer(fc1, dataLength, 'Output_layer', use_relu=False)
+out = fc_layer(fc2, dataLength, 'Output_layer', use_relu=False)
 
 # Define the loss function, optimizer, and accuracy
 with tf.variable_scope('Train'):
     with tf.variable_scope('Loss'):
-        # loss = tf.reduce_mean(tf.losses.mean_squared_error(x_original, out), name='loss')
-        loss = tf.reduce_mean(tf.losses.mean_squared_error(y, out), name='loss')
+        loss = tf.reduce_mean(tf.losses.mean_squared_error(x_original, out), name='loss')
         tf.summary.scalar('loss', loss)
     with tf.variable_scope('Optimizer'):
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, name='Adam-op').minimize(loss)
@@ -232,22 +217,65 @@ sess.run(init)
 train_writer = tf.summary.FileWriter(logs_path, sess.graph)
 num_tr_iter = int(len(train_noise_data) / batch_size)
 global_step = 0
+
+start = 0
+end = 0
+index_in_epoch = 0
+
+def next_batch(start, end, index_in_epoch, train_noise_data, train_no_noise_data, batch_size):
+    """Return the next `batch_size` examples from this data set."""
+    start = index_in_epoch
+    index_in_epoch += batch_size
+    if index_in_epoch > len(train_noise_data):
+        # Finished epoch
+        # Shuffle the data
+        perm = np.arange(len(train_noise_data))
+        np.random.shuffle(perm)
+        train_noise_data = train_noise_data[perm]
+        train_no_noise_data = train_no_noise_data[perm]
+
+        # Start next epoch
+        start = 0
+        index_in_epoch = batch_size
+    end = index_in_epoch
+    return start, end, index_in_epoch, train_noise_data, train_no_noise_data, train_noise_data[start:end], train_no_noise_data[start:end]
+
+# Create TensorFlow Dataset object for validation data
+#-------------------------------------------------------------------------
+# First input argument is Tensor objects of the noise data (training)
+# Second input argument is Tensor objects of the no noise data (labels)
+#valid_tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(valid_noise_data, dtype=tf.float32), tf.convert_to_tensor(valid_no_noise_data, dtype=tf.float32))).repeat().batch(batch_size, True)
+
+#valid_tf_iter = valid_tf_data.make_one_shot_iterator()
+#valid_next = valid_tf_iter.get_next()
+
 for epoch in range(epochs):
+    # Create TensorFlow Dataset object for training data
+    #-------------------------------------------------------------------------
+    # First input argument is Tensor objects of the noise data (training)
+    # Second input argument is Tensor objects of the no noise data (labels)
+    #train_tf_data = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(train_noise_data,  dtype=tf.float32), tf.convert_to_tensor(train_no_noise_data, dtype=tf.float32))).repeat().batch(batch_size, True)
+
+    #train_tf_iter = train_tf_data.make_one_shot_iterator()
+    #train_next = train_tf_iter.get_next()
+
     print('Training epoch: {}'.format(epoch + 1))
     for iteration in range(num_tr_iter):
         # get the next batch of data
+        start, end, index_in_epoch, train_noise_data, train_no_noise_data, train_noise, train_no_noise = next_batch(start, end, index_in_epoch, train_noise_data, train_no_noise_data, batch_size)
 
         global_step += 1
         # Run optimization op (backprop)
-        sess.run(optimizer)
+        sess.run(optimizer, feed_dict={x_original: train_no_noise, x_noisy: train_noise})
+
         if iteration % display_freq == 0:
             # Calculate and display the batch loss and accuracy
-            loss_batch = sess.run(loss)
+            loss_batch = sess.run(loss, feed_dict={x_original: train_no_noise, x_noisy: train_noise})
             print("iter {0:3d}:\t Reconstruction loss={1:.3f}".
                   format(iteration, loss_batch))
 
     # Run validation after every epoch
-    loss_valid = sess.run(loss)
+    loss_valid = sess.run(loss, feed_dict={x_original: valid_no_noise_data, x_noisy: valid_noise_data})
     print('---------------------------------------------------------')
     print("Epoch: {0}, validation loss: {1:.3f}".
           format(epoch + 1, loss_valid))
