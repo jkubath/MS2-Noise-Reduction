@@ -133,13 +133,13 @@ print("no_noise: {}".format(valid_no_noise_data.shape))
 # hyper-parameters
 logs_path = str(os.getcwd()) # path to the folder that we want to save the logs for Tensorboard
 learning_rate = 0.001  # The optimization learning rate
-epochs = 50 #10  # Total number of training epochs
+epochs = 100 #10  # Total number of training epochs
 batch_size = 32 #100  # Training batch size
 display_freq = 100 #100  # Frequency of displaying the training results
 
 # number of units in the hidden layer
-h1 = 50
-h2 = 50
+h1 = 100
+h2 = 400
 
 # weight and bias wrappers
 def weight_variable(name, shape):
@@ -194,11 +194,29 @@ with tf.variable_scope('Input'):
     x_original = tf.placeholder(tf.float32, shape=[None, dataLength], name='X_original')
     x_noisy = tf.placeholder(tf.float32, shape=[None, dataLength], name='X_noisy')
 
-fc1 = fc_layer(x_noisy, h1, 'Hidden_layer_1', use_relu=True)
-fc2 = fc_layer(fc1, h2, 'Hiden_layer_2', use_relu=True)
-# fc3 = fc_layer(fc2, h3, 'Hiden_layer_3', use_relu=True)
-# fc4 = fc_layer(fc3, h4, 'Hiden_layer_4', use_relu=True)
-out = fc_layer(fc2, dataLength, 'Output_layer', use_relu=False)
+# fc1 = fc_layer(x_noisy, h1, 'Hidden_layer_1', use_relu=True)
+# fc2 = fc_layer(fc1, h2, 'Hiden_layer_2', use_relu=True)
+# fc3 = fc_layer(fc2, h2, 'Hiden_layer_3', use_relu=True)
+# fc4 = fc_layer(fc3, h2, 'Hiden_layer_4', use_relu=True)
+# out = fc_layer(fc2, dataLength, 'Output_layer', use_relu=True)
+
+fc1 = tf.layers.dense(x_noisy, h1)
+fc2 = tf.layers.dense(fc1, h1)
+fc2 = tf.nn.relu(fc2)
+fc3 = tf.layers.dense(fc2, h1)
+fc4 = tf.layers.dense(fc3, h1)
+fc5 = tf.layers.dense(fc4, h1)
+fc6 = tf.layers.dense(fc5, h1)
+fc6 = tf.nn.relu(fc6)
+fc7 = tf.layers.dense(fc6, h1)
+fc8 = tf.layers.dense(fc7, h1)
+fc9 = tf.layers.dense(fc8, h1)
+fc9 = tf.nn.relu(fc9)
+fc10 = tf.layers.dense(fc9, h1)
+fc11 = tf.layers.dense(fc10, h1)
+drop = tf.layers.dropout(fc10)
+out = tf.layers.dense(drop, dataLength)
+out = tf.nn.relu(out)
 
 # Define the loss function, optimizer, and accuracy
 with tf.variable_scope('Train'):
@@ -361,3 +379,58 @@ print('---------------------------------------------------------')
 
 # Plot original image, noisy image and reconstructed image
 plot_images(test_no_noise_data, test_noise_data, x_reconstruct)
+
+
+# Output ms2 data for accuracy testing
+output_results = open(filePath + "output.ms2", "w")
+
+# output noise data
+string = ""
+string += "S\t1\t1\t1069.534\n" + "Z\t2\t2138.069\n"
+length = len(test_noise_data[0]) - 1
+while length > 0 and test_noise_data[0][length] == 0:
+	length -= 1
+
+for index in range(len(test_noise_data[0])):
+	if index == 0:
+		continue
+	string += "{:.3f}\t{:.3f}\n".format(float(index), test_noise_data[0][index])
+
+	if index == length:
+		break
+
+output_results.write(string)
+
+# output no noise data
+string = ""
+string += "S\t2\t2\t1069.534\n" + "Z\t2\t2138.069\n"
+length = len(test_no_noise_data[0]) - 1
+while length > 0 and test_no_noise_data[0][length] == 0:
+	length -= 1
+
+for index in range(len(test_no_noise_data[0])):
+	if index == 0:
+		continue
+	string += "{:.3f}\t{:.3f}\n".format(float(index), test_no_noise_data[0][index])
+
+	if index == length:
+		break
+
+output_results.write(string)
+
+# x_reconstruct
+string = ""
+string += "S\t3\t3\t1069.534\n" + "Z\t2\t2138.069\n"
+length = len(x_reconstruct[0]) - 1
+while length > 0 and x_reconstruct[0][length] == 0:
+	length -= 1
+
+for index in range(len(x_reconstruct[0])):
+	if index == 0:
+		continue
+	string += "{:.3f}\t{:.3f}\n".format(float(index), x_reconstruct[0][index])
+
+	if index == length:
+		break
+
+output_results.write(string)
