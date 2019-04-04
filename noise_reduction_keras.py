@@ -55,15 +55,13 @@ def plot_images(original_images, noisy_images, reconstructed_images):
     fig.tight_layout()
     plt.show()
 
-def check_peaks(original_images, noisy_images, reconstructed_images):
+def check_peaks(original_images, noisy_images, reconstructed_images, threshold = 0):
 	correct_peaks = 0
 	missed_peaks = 0
 	wrong_peaks = 0
 
 	total_noise = 0
 	total_no_noise = 0
-
-	threshold = 0.001
 
 	orig = original_images[0]
 	noise = noisy_images[0]
@@ -91,8 +89,7 @@ def check_peaks(original_images, noisy_images, reconstructed_images):
 	print("Missed peaks: {}".format(missed_peaks))
 	print("Wrong peaks: {}".format(wrong_peaks))
 
-def reconstruct(original_images, noisy_images, reconstructed_images):
-	threshold = 0.001
+def reconstruct(original_images, noisy_images, reconstructed_images, threshold = 0):
 	recon = []
 
 	value = 0.0
@@ -334,8 +331,8 @@ print(loss_test)
 # print("Test loss of original image compared to reconstructed image : {0:.3f}".format(loss_test))
 print('---------------------------------------------------------')
 
-print(test_prediction)
 # Plot original image, noisy image and reconstructed image
 # plot_images(test_no_noise_data, test_noise_data, test_prediction)
-check_peaks(test_no_noise_data, test_noise_data, test_prediction)
-reconstruct(test_no_noise_data, test_noise_data, test_prediction)
+threshold = 0.005
+check_peaks(test_no_noise_data, test_noise_data, test_prediction, threshold)
+reconstruct(test_no_noise_data, test_noise_data, test_prediction, threshold)
