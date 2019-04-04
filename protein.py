@@ -40,11 +40,14 @@ def readFile(fileObject, arraySize, outputFileObject, writeToFile = False):
 	if not writeToFile:
 		print("Not writing to file")
 
+	max = 20000
 	spectrum_count = 0
 	addIndex = 0
 	firstIteration = True
 	# read all the data in the file
 	for line in fileObject:
+		if spectrum_count == max:
+			break
 		# hold the peak data
 		splitLine = line.split(" ")
 
@@ -94,7 +97,6 @@ def readFile(fileObject, arraySize, outputFileObject, writeToFile = False):
 			print("First char: {}".format(splitLine[0][0]))
 
 	return np.array(data)
-
 
 # Read the MS2 format data and saves the spectrum data to the outputFileObject
 def readFileNoReturn(fileObject, arraySize, outputFileObject, writeToFile = True):
@@ -168,6 +170,33 @@ def readFileNoReturn(fileObject, arraySize, outputFileObject, writeToFile = True
 
 	return np.array(data)
 
+def readBinnedFile(filePath, max = -1):
+	fileObject = open(filePath, "r")
+	data = [] # list to hold the list of spectrum data
+
+	spectrum_count = 0
+
+	tmp = []
+	# read all the data in the file
+	for line in fileObject:
+		# tmp = line.split(",")
+		for i in line.split(","):
+			if i == "\n":
+				continue
+			tmp.append(float(i))
+
+		data.append(np.asarray(tmp))
+		tmp = []
+		spectrum_count += 1
+
+		# if spectrum_count % 10000 == 0:
+		# 	print("Read {} spectrum".format(spectrum_count))
+
+		if not max == -1 and max == spectrum_count:
+			break
+
+	return np.asarray(data)
+
 # python script to read MS2 data, bin spectra values to nearest m/z
 # integer value, and output in csv format
 def main():
@@ -175,10 +204,8 @@ def main():
 
 	# Default variables
 	#filePath = "/Users/jonah/Desktop/research/"
-	filePath = str(os.getcwd()) + "/large/"
-	# filePath = "D:/MS2/"
-	# fileName = "train_noise.ms2"
-	# fileOutput = "train_noise_binned.ms2"
+	# filePath = str(os.getcwd()) + "/large/"
+	filePath = "/media/linux/Backup/MS2/"
 
 	fileName = "test_no_noise.ms2"
 	fileOutput = "test_no_noise_binned.ms2"
@@ -200,7 +227,7 @@ def main():
 
 	# read the data
 	# data = readFile(inputFileObject, dataLength, outputFileObject, True)
-	readFileNoReturn(inputFileObject, dataLength, outputFileObject, True)
+	readFile(inputFileObject, dataLength, outputFileObject, True)
 
 if __name__ == '__main__':
 	main()

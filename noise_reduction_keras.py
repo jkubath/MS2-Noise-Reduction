@@ -15,8 +15,10 @@ import protein # helper for reading ms2 data and binning to data[spectra][peak d
 import os # used to access operating system directory structure
 from keras.utils import to_categorical
 from keras import models
-from keras.layers import Dense, Dropout, Activation
+from keras.layers import Dense, Dropout, Activation, BatchNormalization
 from keras.layers import Flatten
+
+from sklearn.preprocessing import StandardScaler
 
 # Print the data array
 def printArray(data, length = 10):
@@ -104,10 +106,13 @@ def reconstruct(original_images, noisy_images, reconstructed_images):
 
 print("Noise Reduction NN")
 # Read in the data
-filePath = str(os.getcwd()) + "/big_data/"
+# filePath = str(os.getcwd()) + "/big_data/"
+filePath = "/media/linux/Backup/MS2/"
 
 # length of peak array (0 to max m/z value)
-dataLength = 5000
+dataLength = 7000
+readBinnedFile = True
+
 
 # training set
 #-------------------------------------------------------------------------
@@ -131,45 +136,51 @@ valid_noise_output_file = "valid_noise_binned.ms2"
 valid_write_noise_output = True
 valid_write_no_noise_output = True
 
-# Create file readers for training set
-#-------------------------------------------------------------------------
-print("Creating training file objects")
-try:
-	# labels
-	train_noise_file_object = open(filePath + train_noise_file, "r")
-	# input data
-	train_no_noise_file_object = open(filePath + train_no_noise_file, "r")
-
-	# write to the output files
-	train_no_noise_output_file = open(filePath + train_no_noise_output_file, "w")
-	train_noise_output_file = open(filePath + train_noise_output_file, "w")
-except (OSError, IOError) as e:
-	print(e)
-	exit()
-
-# Create file readers for validation set
-#-------------------------------------------------------------------------
-print("Creating validation file objects")
-try:
-	# labels
-	valid_noise_file_object = open(filePath + valid_noise_file, "r")
-	# input data
-	valid_no_noise_file_object = open(filePath + valid_no_noise_file, "r")
-
-	# write to the output files
-	valid_noise_output_file = open(filePath + valid_noise_output_file, "w")
-	valid_no_noise_output_file = open(filePath + valid_no_noise_output_file, "w")
-except (OSError, IOError) as e:
-	print(e)
-	exit()
-
-# Read and output training data
-# returns numpy array of spectrum data binned to nearest m/z integer value
-# writes the data in csv format to file
-#-------------------------------------------------------------------------
 print("Reading training data")
-train_noise_data = protein.readFile(train_noise_file_object, dataLength, train_noise_output_file, train_write_noise_output)
-train_no_noise_data = protein.readFile(train_no_noise_file_object, dataLength, train_no_noise_output_file, train_write_no_noise_output)
+if not readBinnedFile:
+	# Create file readers for training set
+	#-------------------------------------------------------------------------
+	print("Creating training file objects")
+	try:
+		# labels
+		train_noise_file_object = open(filePath + train_noise_file, "r")
+		# input data
+		train_no_noise_file_object = open(filePath + train_no_noise_file, "r")
+
+		# write to the output files
+		train_no_noise_output_file = open(filePath + train_no_noise_output_file, "w")
+		train_noise_output_file = open(filePath + train_noise_output_file, "w")
+	except (OSError, IOError) as e:
+		print(e)
+		exit()
+
+	# Create file readers for validation set
+	#-------------------------------------------------------------------------
+	print("Creating validation file objects")
+	try:
+		# labels
+		valid_noise_file_object = open(filePath + valid_noise_file, "r")
+		# input data
+		valid_no_noise_file_object = open(filePath + valid_no_noise_file, "r")
+
+		# write to the output files
+		valid_noise_output_file = open(filePath + valid_noise_output_file, "w")
+		valid_no_noise_output_file = open(filePath + valid_no_noise_output_file, "w")
+	except (OSError, IOError) as e:
+		print(e)
+		exit()
+
+	# Read and output training data
+	# returns numpy array of spectrum data binned to nearest m/z integer value
+	# writes the data in csv format to file
+	#-------------------------------------------------------------------------
+	train_noise_data = protein.readFile(train_noise_file_object, dataLength, train_noise_output_file, train_write_noise_output)
+	train_no_noise_data = protein.readFile(train_no_noise_file_object, dataLength, train_no_noise_output_file, train_write_no_noise_output)
+
+else:
+	# files have already been binned, just read the data
+	train_noise_data = protein.readBinnedFile(filePath + train_noise_output_file)
+	train_no_noise_data = protein.readBinnedFile(filePath + train_no_noise_output_file)
 
 print("Training data shape")
 print("noise: {}".format(train_noise_data.shape))
@@ -180,8 +191,12 @@ print("no_noise: {}".format(train_noise_data.shape))
 # writes the data in csv format to file
 #-------------------------------------------------------------------------
 print("Reading validation data")
-valid_noise_data = protein.readFile(valid_noise_file_object, dataLength, valid_noise_output_file, valid_write_noise_output)
-valid_no_noise_data = protein.readFile(valid_no_noise_file_object, dataLength, valid_no_noise_output_file, valid_write_no_noise_output)
+if not readBinnedFile:
+	valid_noise_data = protein.readFile(valid_noise_file_object, dataLength, valid_noise_output_file, valid_write_noise_output)
+	valid_no_noise_data = protein.readFile(valid_no_noise_file_object, dataLength, valid_no_noise_output_file, valid_write_no_noise_output)
+else:
+	valid_noise_data = protein.readBinnedFile(filePath + train_noise_output_file)
+	valid_no_noise_data = protein.readBinnedFile(filePath + train_no_noise_output_file)
 
 print("Validation data shape")
 print("noise: {}".format(valid_noise_data.shape))
@@ -201,20 +216,41 @@ epochs = 5 #10  # Total number of training epochs
 batch_size = 10 #100  # Training batch size
 display_freq = 1 #100  # Frequency of displaying the training results
 
+input_length = len(train_noise_data[0])
+
+# Scale input data
+scale = StandardScaler()
+scale.fit(train_noise_data)
+scale.fit(valid_noise_data)
+
+train_noise_data = scale.transform(train_noise_data)
+valid_noise_data = scale.transform(valid_noise_data)
+
+# scale output
+scale = StandardScaler()
+scale.fit(train_no_noise_data)
+scale.fit(valid_no_noise_data)
+
+train_no_noise_data = scale.transform(train_no_noise_data)
+valid_no_noise_data = scale.transform(valid_no_noise_data)
+
+print("Input length {}".format(input_length))
+
 # number of units in the hidden layer
 h1 = 100
 
 model = models.Sequential()
 # Input - Layer
-model.add(Dense(5000, activation = "relu",input_shape=(dataLength,)))
+model.add(Dense(input_length, activation = "relu",input_shape=(input_length,)))
 # model.add(Dropout(0.8, noise_shape=None, seed=None))
-# model.add(Dense(1000, activation = "relu"))
+model.add(Dense(input_length, activation = "relu"))
 # model.add(Dropout(0.8, noise_shape=None, seed=None))
-# model.add(Dense(50, activation = "relu"))
+model.add(Dense(input_length, activation = "relu"))
 # Output- Layer
-model.add(Dense(dataLength, activation = "sigmoid"))
-# model.add(Activation("sigmoid"))
-model.summary()
+# model.add(Dense(input_length, activation = "sigmoid"))
+
+print(model.summary())
+
 # compiling the model
 model.compile(
  optimizer = "adam",
@@ -223,11 +259,12 @@ model.compile(
 )
 results = model.fit(
  train_noise_data, train_no_noise_data,
- epochs= 20,
+ epochs= 10,
  batch_size = 500,
  validation_data = (valid_noise_data, valid_no_noise_data),
  verbose = 2
 )
+
 
 # validation set
 # -------------------------------------------------------------------------
@@ -240,31 +277,32 @@ test_noise_output_file = "test_noise_binned.ms2"
 test_write_noise_output = True
 test_write_no_noise_output = True
 
-# length of peak array
-dataLength = 5000
+if not readBinnedFile:
+	# Create file readers for test set
+	#-------------------------------------------------------------------------
+	print("Creating test file objects")
+	try:
+		# input data
+		test_no_noise_file_object = open(filePath + test_no_noise_file, "r")
+		# labels
+		test_noise_file_object = open(filePath + test_noise_file, "r")
 
+		# write to the output files
+		test_no_noise_output_file = open(filePath + test_no_noise_output_file, "w")
+		test_noise_output_file = open(filePath + test_noise_output_file, "w")
+	except (OSError, IOError) as e:
+		print(e)
+		exit()
 
-# Create file readers for test set
-#-------------------------------------------------------------------------
-print("Creating test file objects")
-try:
-	# input data
-	test_no_noise_file_object = open(filePath + test_no_noise_file, "r")
-	# labels
-	test_noise_file_object = open(filePath + test_noise_file, "r")
-
-	# write to the output files
-	test_no_noise_output_file = open(filePath + test_no_noise_output_file, "w")
-	test_noise_output_file = open(filePath + test_noise_output_file, "w")
-except (OSError, IOError) as e:
-	print(e)
-	exit()
-
-# Read and output test data
-#-------------------------------------------------------------------------
-print("Reading test data")
-test_no_noise_data = protein.readFile(test_no_noise_file_object, dataLength, test_noise_output_file, test_write_noise_output)
-test_noise_data = protein.readFile(test_noise_file_object, dataLength, test_noise_output_file, test_write_noise_output)
+	# Read and output test data
+	#-------------------------------------------------------------------------
+	print("Reading test data")
+	test_no_noise_data = protein.readFile(test_no_noise_file_object, dataLength, test_noise_output_file, test_write_noise_output)
+	test_noise_data = protein.readFile(test_noise_file_object, dataLength, test_noise_output_file, test_write_noise_output)
+else:
+	# files have already been binned, just read the data
+	test_noise_data = protein.readBinnedFile(filePath + test_noise_output_file)
+	test_no_noise_data = protein.readBinnedFile(filePath + test_no_noise_output_file)
 
 # make prediction on test data
 test_prediction = model.predict(
