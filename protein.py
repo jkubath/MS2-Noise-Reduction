@@ -181,9 +181,10 @@ def readBinnedFile(filePath, max = -1):
 	for line in fileObject:
 		# tmp = line.split(",")
 		for i in line.split(","):
+			# skip new line characters
 			if i == "\n":
 				continue
-			tmp.append(float(i))
+			tmp.append(int(i))
 
 		data.append(np.asarray(tmp))
 		tmp = []
@@ -204,11 +205,11 @@ def main():
 
 	# Default variables
 	#filePath = "/Users/jonah/Desktop/research/"
-	# filePath = str(os.getcwd()) + "/large/"
-	filePath = "/media/linux/Backup/MS2/"
+	filePath = str(os.getcwd()) + "/big_data/"
+	# filePath = "/media/linux/Backup/MS2/"
 
-	fileName = "test_no_noise.ms2"
-	fileOutput = "test_no_noise_binned.ms2"
+	fileName = "test_noise.ms2"
+	fileOutput = "test_noise_binned.ms2"
 
 	# hold the peak information
 	dataLength = 7000

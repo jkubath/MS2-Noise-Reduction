@@ -19,6 +19,7 @@ from keras.layers import Dense, Dropout, Activation, BatchNormalization
 from keras.layers import Flatten
 
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import Normalizer
 
 # Print the data array
 def printArray(data, length = 10):
@@ -62,7 +63,7 @@ def check_peaks(original_images, noisy_images, reconstructed_images):
 	total_noise = 0
 	total_no_noise = 0
 
-	threshold = 0.9
+	threshold = 0.001
 
 	orig = original_images[0]
 	noise = noisy_images[0]
@@ -91,10 +92,10 @@ def check_peaks(original_images, noisy_images, reconstructed_images):
 	print("Wrong peaks: {}".format(wrong_peaks))
 
 def reconstruct(original_images, noisy_images, reconstructed_images):
-	threshold = 0.8
+	threshold = 0.001
 	recon = []
 
-	value = 0
+	value = 0.0
 	for index in range(len(reconstructed_images[0])):
 		value = reconstructed_images[0][index]
 		if value > threshold:
@@ -106,8 +107,8 @@ def reconstruct(original_images, noisy_images, reconstructed_images):
 
 print("Noise Reduction NN")
 # Read in the data
-# filePath = str(os.getcwd()) + "/big_data/"
-filePath = "/media/linux/Backup/MS2/"
+filePath = str(os.getcwd()) + "/big_data/"
+# filePath = "/media/linux/Backup/MS2/"
 
 # length of peak array (0 to max m/z value)
 dataLength = 7000
@@ -219,20 +220,22 @@ display_freq = 1 #100  # Frequency of displaying the training results
 input_length = len(train_noise_data[0])
 
 # Scale input data
-scale = StandardScaler()
-scale.fit(train_noise_data)
-scale.fit(valid_noise_data)
+# scale = StandardScaler()
+noise_scale = Normalizer()
+noise_scale.fit(train_noise_data)
+noise_scale.fit(valid_noise_data)
 
-train_noise_data = scale.transform(train_noise_data)
-valid_noise_data = scale.transform(valid_noise_data)
+train_noise_data = noise_scale.transform(train_noise_data)
+valid_noise_data = noise_scale.transform(valid_noise_data)
 
 # scale output
-scale = StandardScaler()
-scale.fit(train_no_noise_data)
-scale.fit(valid_no_noise_data)
+# scale = StandardScaler()
+no_scale = Normalizer()
+no_scale.fit(train_no_noise_data)
+no_scale.fit(valid_no_noise_data)
 
-train_no_noise_data = scale.transform(train_no_noise_data)
-valid_no_noise_data = scale.transform(valid_no_noise_data)
+train_no_noise_data = no_scale.transform(train_no_noise_data)
+valid_no_noise_data = no_scale.transform(valid_no_noise_data)
 
 print("Input length {}".format(input_length))
 
@@ -248,6 +251,7 @@ model.add(Dense(input_length, activation = "relu"))
 model.add(Dense(input_length, activation = "relu"))
 # Output- Layer
 # model.add(Dense(input_length, activation = "sigmoid"))
+# model.add(Dense(input_length, activation = "softmax"))
 
 print(model.summary())
 
@@ -288,8 +292,8 @@ if not readBinnedFile:
 		test_noise_file_object = open(filePath + test_noise_file, "r")
 
 		# write to the output files
-		test_no_noise_output_file = open(filePath + test_no_noise_output_file, "w")
-		test_noise_output_file = open(filePath + test_noise_output_file, "w")
+		test_no_noise_output_object = open(filePath + test_no_noise_output_file, "w")
+		test_noise_output_object = open(filePath + test_noise_output_file, "w")
 	except (OSError, IOError) as e:
 		print(e)
 		exit()
@@ -297,12 +301,19 @@ if not readBinnedFile:
 	# Read and output test data
 	#-------------------------------------------------------------------------
 	print("Reading test data")
-	test_no_noise_data = protein.readFile(test_no_noise_file_object, dataLength, test_noise_output_file, test_write_noise_output)
-	test_noise_data = protein.readFile(test_noise_file_object, dataLength, test_noise_output_file, test_write_noise_output)
+	test_no_noise_data = protein.readFile(test_no_noise_file_object, dataLength, test_noise_output_object, test_write_noise_output)
+	test_noise_data = protein.readFile(test_noise_file_object, dataLength, test_noise_output_object, test_write_noise_output)
 else:
 	# files have already been binned, just read the data
 	test_noise_data = protein.readBinnedFile(filePath + test_noise_output_file)
 	test_no_noise_data = protein.readBinnedFile(filePath + test_no_noise_output_file)
+
+test_noise_data = noise_scale.transform(test_noise_data)
+test_no_noise_data = no_scale.transform(test_no_noise_data)
+
+print("Test data shape")
+print("noise: {}".format(test_noise_data.shape))
+print("no_noise: {}".format(test_no_noise_data.shape))
 
 # make prediction on test data
 test_prediction = model.predict(
@@ -323,6 +334,7 @@ print(loss_test)
 # print("Test loss of original image compared to reconstructed image : {0:.3f}".format(loss_test))
 print('---------------------------------------------------------')
 
+print(test_prediction)
 # Plot original image, noisy image and reconstructed image
 # plot_images(test_no_noise_data, test_noise_data, test_prediction)
 check_peaks(test_no_noise_data, test_noise_data, test_prediction)
