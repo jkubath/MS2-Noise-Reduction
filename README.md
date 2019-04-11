@@ -5,16 +5,13 @@ Dir: MaSS-Simulator
 Description: software to generate MS2 spectrum data.
 Source: https://github.com/pcdslab/MaSS-Simulator
 
-Dir: MNIST_data
-Description: Image data downloaded when running noise_reduction_tutorial.py.  Images are hand written numbers 0 to 9.
-
-Dir: small_data
+Dir: small_data_1000
   Description: Folder containing input, validation, and test MS2 data for noise_reduction_ms2.py.  This data was generated with the MaSS-Simulator software.
     no_noise: Files without the added noise peaks
     binned: Files output from protein.py that have the generated MS2 data binned.  The m/z values are binned to integer values instead of float values.
 
-Dir: big_data
-  Description: Folder containing the same information as small_output, but the size of the data was started at 5000 peptides.  This data was then split randomly into train, validation, and test data sets.
+Dir: small_data_5000
+  Description: Folder containing the same information as small_data_1000, but the size of the data was started at 5000 peptides.  This data was then split randomly into train, validation, and test data sets.
 
 
 General Outline:
@@ -73,3 +70,6 @@ General Outline:
     B. Bin the m/z float values to nearest integer and write to binned files
     C. build a neural network to learn how to reduce the noise in the MS2 data
     D. test
+
+    noise_reduction_keras.py is an implementation of noise_reduction_ms2 with
+    the Keras API.
